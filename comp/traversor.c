@@ -41,6 +41,12 @@ static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
         case DECLARATION_STATEMENT: {
             traverse_expr(stmt->u.declaration_s->initializer, visitor);
             break;
+        }case BLOCK_STATEMENT: {
+            StatementList* list = stmt->u.block_s->stmt_list;
+            for (; list; list = list->next) {
+                traverse_stmt(list->stmt, visitor);
+            }
+            break;
         }
         default: {
             fprintf(stderr, "No such stmt->type %d in traverse_stmt_children\n",

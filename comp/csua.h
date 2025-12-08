@@ -159,6 +159,7 @@ struct Expression_tag {
 typedef enum {
     EXPRESSION_STATEMENT = 1,
     DECLARATION_STATEMENT,
+    BLOCK_STATEMENT, /*ここを編集*/
     STATEMENT_TYPE_COUNT_PLUS_ONE
 } StatementType;
 
@@ -168,6 +169,7 @@ struct Statement_tag {
     union {
         Expression* expression_s;
         Declaration* declaration_s;
+        Block* block_s;  /*ここを編集*/
     } u;
 };
 
@@ -181,6 +183,11 @@ typedef struct StatementList_tag {
     Statement* stmt;
     struct StatementList_tag* next;
 } StatementList;
+
+/*ここを編集*/
+typedef struct Block_tag {
+    StatementList* stmt_list;
+} Block;
 
 typedef struct DeclarationList_tag {
     Declaration* decl;
@@ -255,6 +262,10 @@ Statement* cs_create_expression_statement(Expression* expr);
 Statement* cs_create_declaration_statement(CS_BasicType type, char* name,
                                            Expression* initializer);
 StatementList* cs_create_statement_list(Statement* stmt);
+
+/*ここを編集*/
+Block* cs_create_block(StatementList* stmt_list);
+Statement* cs_create_block_statement(Block* block);
 
 DeclarationList* cs_create_declaration_list(Declaration* decl);
 TypeSpecifier* cs_create_type_specifier(CS_BasicType type);

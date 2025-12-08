@@ -775,6 +775,19 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+/*ここを編集*/
+static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
+    // ブロックに入ったときの処理（今は空でOK）
+}
+
+static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
+    // ブロックの中のstatementを順に処理
+    for (Statement* s = stmt->u.block.statements; s; s = s->next) {
+        traverse_stmt(s, visitor);  // traverse_stmt は既存の関数
+    }
+}
+
+
 CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
                                        CS_Executable* exec) {
     visit_expr* enter_expr_list;
@@ -879,6 +892,11 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+
+    /*ここを編集*/
+    enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
+    leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
+
 
     ((Visitor*)visitor)->enter_expr_list = enter_expr_list;
     ((Visitor*)visitor)->leave_expr_list = leave_expr_list;
