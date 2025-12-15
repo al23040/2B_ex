@@ -16,7 +16,6 @@ void print_depth() {
     }
 }
 
-/*
 static char* get_type_name(CS_BasicType type) {
     switch(type) {
         case CS_BOOLEAN_TYPE: {
@@ -33,7 +32,6 @@ static char* get_type_name(CS_BasicType type) {
         }
     }
 }
-*/
 
 static const char* get_cast_type_name(CS_CastType type) {
     switch (type) {
@@ -355,6 +353,19 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     fprintf(stderr, "leave declstmt\n");
 }
 
+/*ここを編集*/
+static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
+    print_depth();
+    fprintf(stderr, "enter block\n");
+    increment();
+}
+
+static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
+    decrement();
+    print_depth();
+    fprintf(stderr, "leave block\n");
+}
+
 Visitor* create_treeview_visitor() {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;
@@ -398,6 +409,8 @@ Visitor* create_treeview_visitor() {
 
     enter_stmt_list[EXPRESSION_STATEMENT] = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT] = enter_declstmt;
+    enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
+
 
     leave_expr_list[BOOLEAN_EXPRESSION] = leave_boolexpr;
     leave_expr_list[INT_EXPRESSION] = leave_intexpr;
@@ -427,6 +440,8 @@ Visitor* create_treeview_visitor() {
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+    leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
+
 
     visitor->enter_expr_list = enter_expr_list;
     visitor->leave_expr_list = leave_expr_list;
@@ -446,4 +461,124 @@ void delete_visitor(Visitor* visitor) {
         MEM_free(visitor->notify_expr_list);
     }
     MEM_free(visitor);
+}
+
+#include "visitor.h"
+
+void traverse_stmt(Statement* stmt, Visitor* visitor) {
+    if (!stmt) return;
+
+    StatementType type = stmt->type;
+
+    /* enter */
+    if (visitor->enter_stmt_list[type]) {
+        visitor->enter_stmt_list[type](stmt, visitor);
+    }
+
+    switch (type) {
+
+    case EXPRESSION_STATEMENT:
+        traverse_expr(stmt->u.expression_s, visitor);
+        break;
+
+    case DECLARATION_STATEMENT:
+        if (stmt->u.declaration_s->initializer) {
+            traverse_expr(stmt->u.declaration_s->initializer, visitor);
+        }
+        break;
+
+    case BLOCK_STATEMENT: {
+        StatementList* sl = stmt->u.block_s->stmt_list;
+        while (sl) {
+            traverse_stmt(sl->stmt, visitor);
+            sl = sl->next;
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    /* leave */
+    if (visitor->leave_stmt_list[type]) {
+        visitor->leave_stmt_list[type](stmt, visitor);
+    }
+}
+
+void traverse_expr(Expression* expr, Visitor* visitor) {
+    if (!expr) return;
+
+    ExpressionKind kind = expr->kind;
+
+    /* enter */
+    if (visitor->enter_expr_list[kind]) {
+        visitor->enter_expr_list[kind](expr, visitor);
+    }
+
+    switch (kind) {
+
+    case ADD_EXPRESSION:
+    case SUB_EXPRESSION:
+    case MUL_EXPRESSION:
+    case DIV_EXPRESSION:
+    case MOD_EXPRESSION:
+    case GT_EXPRESSION:
+    case GE_EXPRESSION:
+    case LT_EXPRESSION:
+    case LE_EXPRESSION:
+    case EQ_EXPRESSION:
+    case NE_EXPRESSION:
+    case LOGICAL_AND_EXPRESSION:
+    case LOGICAL_OR_EXPRESSION:
+        traverse_expr(expr->u.binary_expression.left, visitor);
+        traverse_expr(expr->u.binary_expression.right, visitor);
+        break;
+
+    case ASSIGN_EXPRESSION:
+        traverse_expr(expr->u.assignment_expression.left, visitor);
+        traverse_expr(expr->u.assignment_expression.right, visitor);
+        break;
+
+    case CAST_EXPRESSION:
+        traverse_expr(expr->u.cast_expression.expr, visitor);
+        break;
+
+    case FUNCTION_CALL_EXPRESSION: {
+        ArgumentList* arg = expr->u.function_call_expression.argument;
+        while (arg) {
+            traverse_expr(arg->expr, visitor);
+            arg = arg->next;
+        }
+        break;
+    }
+
+    case INCREMENT_EXPRESSION:
+    case DECREMENT_EXPRESSION:
+        traverse_expr(expr->u.inc_dec, visitor);
+        break;
+
+    case MINUS_EXPRESSION:
+        traverse_expr(expr->u.minus_expression, visitor);
+        break;
+
+    case LOGICAL_NOT_EXPRESSION:
+        traverse_expr(expr->u.logical_not_expression, visitor);
+        break;
+
+    /* leaf nodes */
+    case BOOLEAN_EXPRESSION:
+    case INT_EXPRESSION:
+    case DOUBLE_EXPRESSION:
+    case IDENTIFIER_EXPRESSION:
+        break;
+
+    default:
+        break;
+    }
+
+    /* leave */
+    if (visitor->leave_expr_list[kind]) {
+        visitor->leave_expr_list[kind](expr, visitor);
+    }
 }
