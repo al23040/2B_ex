@@ -524,7 +524,6 @@ static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     DeclarationList* dl = MEM_malloc(sizeof(DeclarationList));
     dl -> decl = stmt -> u.declaration_s;
     dl -> next = compiler -> current_block -> decl_list;
-
     compiler -> current_block -> decl_list = dl;
 }
 

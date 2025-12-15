@@ -10,7 +10,14 @@ void cs_set_current_compiler(CS_Compiler* compiler) {
     current_compiler = compiler;
 }
 
-CS_Compiler* cs_get_current_compiler() { return current_compiler; }
+// デバッグ用
+CS_Compiler* cs_get_current_compiler() { 
+    // if (current_compiler == NULL) {
+    //     fprintf(stderr, "BUG: current_compiler is NULL\n");
+    //     return 0;
+    // }
+    return current_compiler; 
+}
 
 DeclarationList* cs_chain_declaration(DeclarationList* decl_list,
                                       Declaration* decl) {
