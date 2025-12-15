@@ -781,9 +781,10 @@ static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
 }
 
 static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
-    // ブロックの中のstatementを順に処理
-    for (Statement* s = stmt->u.block.statements; s; s = s->next) {
-        traverse_stmt(s, visitor);  // traverse_stmt は既存の関数
+    Block* block = stmt->u.block_s; 
+    if (!block) return;
+    for (StatementList* sl = block->stmt_list; sl; sl = sl->next) {
+        traverse_stmt(sl->stmt, visitor);
     }
 }
 
