@@ -234,3 +234,9 @@ ArgumentList* cs_create_argument(Expression* expr) {
     argument->next = NULL;
     return argument;
 }
+
+Statement* cs_create_block_statement(StatementList* list) {
+    Statement* stmt = cs_create_statement(BLOCK_STATEMENT);
+    stmt->u.block_statement_s->statement_list = list;
+    return stmt;
+}
