@@ -18,6 +18,9 @@ OpcodeInfo svm_opcode_info[] = {
     {"pop_static_int", "i", -1},
     {"pop_static_double", "i", -1},
 
+    {"LOAD_LOCAL",  "i", 2 },
+    {"STORE_LOCAL", "i", 2 },
+
     {"add_int", "", -1},
     {"add_double", "", -1},
     {"sub_int", "", -1},

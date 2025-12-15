@@ -16,6 +16,8 @@ typedef enum {
     SVM_PUSH_STATIC_DOUBLE,
     SVM_POP_STATIC_INT,
     SVM_POP_STATIC_DOUBLE,
+    SVM_LOAD_LOCAL,
+    SVM_STORE_LOCAL,
     SVM_ADD_INT,
     SVM_ADD_DOUBLE,
     SVM_SUB_INT,
@@ -106,6 +108,8 @@ struct SVM_VirtualMachine_tag {
     SVM_Value *stack;
     uint32_t pc;
     uint32_t sp;
+    
+    uint32_t fp;
 };
 
 extern OpcodeInfo svm_opcode_info[];
