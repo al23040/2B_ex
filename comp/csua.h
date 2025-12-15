@@ -20,6 +20,7 @@ typedef struct CS_Compiler_tag CS_Compiler;
 
 typedef struct TypeSpecifier_tag TypeSpecifier;
 typedef struct Statement_tag Statement;
+typedef struct StatementList_tag StatementList;
 
 typedef enum { CS_FALSE = 0, CS_TRUE = 1 } CS_Boolean;
 
@@ -66,6 +67,12 @@ typedef struct {
     ParameterList* param;
     int index;
 } FunctionDeclaration;
+
+typedef struct {
+    StatementList *statement_list; // ブロック内の文のリスト
+} BlockStatement;
+
+
 
 typedef enum {
     BOOLEAN_EXPRESSION = 1,
@@ -159,7 +166,8 @@ struct Expression_tag {
 typedef enum {
     EXPRESSION_STATEMENT = 1,
     DECLARATION_STATEMENT,
-    STATEMENT_TYPE_COUNT_PLUS_ONE
+    BLOCK_STATEMENT, //ブロック文の識別子
+    STATEMENT_TYPE_COUNT_PLUS_ONE,
 } StatementType;
 
 struct Statement_tag {
@@ -168,6 +176,7 @@ struct Statement_tag {
     union {
         Expression* expression_s;
         Declaration* declaration_s;
+        BlockStatement* block_statement_s;
     } u;
 };
 
@@ -267,6 +276,9 @@ FunctionDeclarationList* cs_create_function_declaration_list(
 
 ParameterList* cs_create_parameter(CS_BasicType type, char* name);
 ArgumentList* cs_create_argument(Expression* expr);
+
+//BlockStatement ASTノードを生成する関数の宣言
+Statement* cs_create_block_statement(StatementList* list);
 
 /* interface.c */
 CS_Compiler* CS_create_compiler();
