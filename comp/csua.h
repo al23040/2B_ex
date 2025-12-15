@@ -282,6 +282,9 @@ FunctionDeclarationList* cs_create_function_declaration_list(
 ParameterList* cs_create_parameter(CS_BasicType type, char* name);
 ArgumentList* cs_create_argument(Expression* expr);
 
+//BlockStatement ASTノードを生成する関数の宣言
+Statement* cs_create_block_statement(StatementList* list);
+
 /* interface.c */
 CS_Compiler* CS_create_compiler();
 CS_Boolean CS_compile(CS_Compiler* compiler, FILE* fin);
