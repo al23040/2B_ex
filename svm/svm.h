@@ -16,8 +16,6 @@ typedef enum {
     SVM_PUSH_STATIC_DOUBLE,
     SVM_POP_STATIC_INT,
     SVM_POP_STATIC_DOUBLE,
-    SVM_LOAD_LOCAL,
-    SVM_STORE_LOCAL,
     SVM_ADD_INT,
     SVM_ADD_DOUBLE,
     SVM_SUB_INT,
@@ -52,7 +50,9 @@ typedef enum {
     SVM_POP,
     SVM_PUSH_FUNCTION,
     SVM_INVOKE,
-    SVM_RETURN
+    SVM_RETURN,
+    SVM_LOAD_LOCAL,
+    SVM_STORE_LOCAL,
 } SVM_Opcode;
 
 typedef enum {

@@ -18,8 +18,6 @@ OpcodeInfo svm_opcode_info[] = {
     {"pop_static_int", "i", -1},
     {"pop_static_double", "i", -1},
 
-    {"LOAD_LOCAL",  "i", 2 },
-    {"STORE_LOCAL", "i", 2 },
 
     {"add_int", "", -1},
     {"add_double", "", -1},
@@ -56,5 +54,7 @@ OpcodeInfo svm_opcode_info[] = {
     {"push_function", "i", 0},
     {"invoke", "", -1},
     {"return", "", -1},
-
+    
+    {"LOAD_LOCAL",  "i", 2 },
+    {"STORE_LOCAL", "i", 2 },
 };
