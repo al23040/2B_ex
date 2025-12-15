@@ -515,10 +515,17 @@ static void leave_exprstmt(Statement* stmt, Visitor* visitor) {
 }
 
 static void enter_declstmt(Statement* stmt, Visitor* visitor) {
-    CS_Compiler* compiler = ((MeanVisitor*)visitor)->compiler;
-    compiler->decl_list =
-        cs_chain_declaration(compiler->decl_list, stmt->u.declaration_s);
+    // 12/15削除(全部グローバルなスコープになっているため)
+    // CS_Compiler* compiler = ((MeanVisitor*)visitor)->compiler;
+    // compiler->decl_list =
+    //     cs_chain_declaration(compiler->decl_list, stmt->u.declaration_s);
     //    fprintf(stderr, "enter declstmt\n");
+    CS_Compiler* compiler = cs_get_current_compiler();
+    DeclarationList* dl = MEM_malloc(sizeof(DeclarationList));
+    dl -> decl = stmt -> u.declaration_s;
+    dl -> next = compiler -> current_block -> decl_list;
+
+    compiler -> current_block -> decl_list = dl;
 }
 
 static void leave_declstmt(Statement* stmt, Visitor* visitor) {
@@ -528,6 +535,22 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
         decl->initializer =
             assignment_type_check(decl->type, decl->initializer, visitor);
     }
+}
+//12/15追加
+static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
+    Block* new_block = MEM_malloc(sizeof(Block));
+    MeanVisitor* mv = (MeanVisitor*)visitor;
+    CS_Compiler* compiler = mv -> compiler;
+    new_block -> decl_list = NULL;
+    new_block -> parent = compiler -> current_block;
+    compiler -> current_block = new_block;
+}
+
+static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
+    MeanVisitor* mv = (MeanVisitor*)visitor;
+    CS_Compiler* compiler = mv -> compiler;
+
+    compiler -> current_block = compiler -> current_block -> parent;
 }
 
 MeanVisitor* create_mean_visitor() {
@@ -580,6 +603,10 @@ MeanVisitor* create_mean_visitor() {
 
     enter_stmt_list[EXPRESSION_STATEMENT] = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT] = enter_declstmt;
+
+    //追加
+    enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
+    leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
 
     leave_expr_list[BOOLEAN_EXPRESSION] = leave_boolexpr;
     leave_expr_list[INT_EXPRESSION] = leave_intexpr;

@@ -20,6 +20,7 @@ typedef struct CS_Compiler_tag CS_Compiler;
 
 typedef struct TypeSpecifier_tag TypeSpecifier;
 typedef struct Statement_tag Statement;
+typedef struct StatementList_tag StatementList;
 
 typedef enum { CS_FALSE = 0, CS_TRUE = 1 } CS_Boolean;
 
@@ -66,6 +67,10 @@ typedef struct {
     ParameterList* param;
     int index;
 } FunctionDeclaration;
+
+typedef struct {
+    StatementList* Statement_list;
+}BlockStatement;
 
 typedef enum {
     BOOLEAN_EXPRESSION = 1,
@@ -159,6 +164,7 @@ struct Expression_tag {
 typedef enum {
     EXPRESSION_STATEMENT = 1,
     DECLARATION_STATEMENT,
+    BLOCK_STATEMENT,    //12/15追加
     STATEMENT_TYPE_COUNT_PLUS_ONE
 } StatementType;
 
@@ -168,6 +174,7 @@ struct Statement_tag {
     union {
         Expression* expression_s;
         Declaration* declaration_s;
+        BlockStatement* block_statement_s;
     } u;
 };
 
@@ -192,11 +199,18 @@ typedef struct FunctionDeclarationList_tag {
     struct FunctionDeclarationList_tag* next;
 } FunctionDeclarationList;
 
+//12/08追加
+typedef struct Block_tag {
+    DeclarationList* decl_list;
+    struct Block_tag* parent;
+} Block;
+
 struct CS_Compiler_tag {
     MEM_Storage storage;
     ExpressionList* expr_list;  // temporary
     StatementList* stmt_list;
     DeclarationList* decl_list;
+    Block* current_block;   //12/08追加
     FunctionDeclarationList* func_list;
     int current_line;
 };
