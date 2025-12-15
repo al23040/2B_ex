@@ -17,6 +17,7 @@ int yylex();
     CS_BasicType         type_specifier;
     ParameterList       *parameter_list;
     ArgumentList        *argument_list;
+    StatementList       *statement_list;
 }
 
 %token LP
@@ -77,10 +78,13 @@ int yylex();
                  
 %type <assignment_operator> assignment_operator
 %type <type_specifier> type_specifier
-%type <statement> statement declaration_statement
+%type <statement> statement declaration_statement declaration_or_statement
 %type <function_declaration> function_definition
 %type <parameter_list> parameter_list
 %type <argument_list> argument_list
+
+%type <statement> compound_statement
+%type <statement_list> declaration_or_statement_list
 
 %%
 translation_unit
@@ -130,6 +134,7 @@ statement
             $$ = cs_create_expression_statement($1);
         }
         | declaration_statement { /*printf("declaration_statement\n"); */}
+        | compound_statement { $$ = $1; }
 	;
         
 declaration_statement
@@ -234,6 +239,23 @@ primary_expression
 	| TRUE_T           { $$ = cs_create_boolean_expression(CS_TRUE); }
 	| FALSE_T          { $$ = cs_create_boolean_expression(CS_FALSE); }
 	;
+
+declaration_or_statement
+        : declaration_statement
+        | statement
+        ;
+
+declaration_or_statement_list
+        : declaration_or_statement
+        { $$ = cs_create_statement_list($1); }
+        | declaration_or_statement_list declaration_or_statement
+        { $$ = cs_chain_statement_list($1, $2); }
+
+compound_statement
+        : LC RC
+        { $$ = cs_create_block_statement(NULL); }
+        | LC declaration_or_statement_list RC
+        { $$ = cs_create_block_statement($2); }
 %%
 int
 yyerror(char const *str)
