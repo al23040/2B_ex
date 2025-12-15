@@ -20,6 +20,9 @@ typedef struct CS_Compiler_tag CS_Compiler;
 
 typedef struct TypeSpecifier_tag TypeSpecifier;
 typedef struct Statement_tag Statement;
+typedef struct Block_tag Block;
+
+
 
 typedef enum { CS_FALSE = 0, CS_TRUE = 1 } CS_Boolean;
 
@@ -264,7 +267,7 @@ Statement* cs_create_declaration_statement(CS_BasicType type, char* name,
 StatementList* cs_create_statement_list(Statement* stmt);
 
 /*ここを編集*/
-Block* cs_create_block(StatementList* stmt_list);
+struct Block_tag* cs_create_block(StatementList* stmt_list);
 Statement* cs_create_block_statement(Block* block);
 
 DeclarationList* cs_create_declaration_list(Declaration* decl);
