@@ -1,10 +1,3 @@
-/*
- * File:   csua.h
- * Author: hiroaki
- *
- * Created on October 1, 2018, 1:06 PM
- */
-
 #ifndef _CSUA_H_
 #define _CSUA_H_
 #include <stdint.h>
@@ -20,6 +13,8 @@ typedef struct CS_Compiler_tag CS_Compiler;
 
 typedef struct TypeSpecifier_tag TypeSpecifier;
 typedef struct Statement_tag Statement;
+
+typedef struct StatementList_tag StatementList;
 typedef struct Block_tag Block;
 
 
@@ -166,13 +161,18 @@ typedef enum {
     STATEMENT_TYPE_COUNT_PLUS_ONE
 } StatementType;
 
+/*ここを編集*/
+struct Block_tag {
+    struct StatementList_tag* stmt_list;
+};
+
 struct Statement_tag {
     StatementType type;
     int line_number;
     union {
         Expression* expression_s;
         Declaration* declaration_s;
-        Block* block_s;  /*ここを編集*/
+        struct Block_tag* block_s;
     } u;
 };
 
@@ -186,11 +186,6 @@ typedef struct StatementList_tag {
     Statement* stmt;
     struct StatementList_tag* next;
 } StatementList;
-
-/*ここを編集*/
-typedef struct Block_tag {
-    StatementList* stmt_list;
-} Block;
 
 typedef struct DeclarationList_tag {
     Declaration* decl;
@@ -267,8 +262,9 @@ Statement* cs_create_declaration_statement(CS_BasicType type, char* name,
 StatementList* cs_create_statement_list(Statement* stmt);
 
 /*ここを編集*/
-struct Block_tag* cs_create_block(StatementList* stmt_list);
-Statement* cs_create_block_statement(Block* block);
+struct Block_tag* cs_create_block(struct StatementList_tag* stmt_list);
+Statement* cs_create_block_statement(struct Block_tag* block);
+
 
 DeclarationList* cs_create_declaration_list(Declaration* decl);
 TypeSpecifier* cs_create_type_specifier(CS_BasicType type);
