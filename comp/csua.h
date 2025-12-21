@@ -201,12 +201,18 @@ typedef struct FunctionDeclarationList_tag {
     struct FunctionDeclarationList_tag* next;
 } FunctionDeclarationList;
 
+typedef struct LocalScope_tag {
+    DeclarationList* decl_list;
+    struct LocalScope_tag* outer;
+} LocalScope;
+
 struct CS_Compiler_tag {
     MEM_Storage storage;
     ExpressionList* expr_list;  // temporary
     StatementList* stmt_list;
     DeclarationList* decl_list;
     FunctionDeclarationList* func_list;
+    LocalScope* current_scope;
     int current_line;
 };
 
@@ -294,7 +300,9 @@ StatementList* cs_chain_statement_list(StatementList* stmt_list,
                                        Statement* stmt);
 FunctionDeclarationList* cs_chain_function_declaration_list(
     FunctionDeclarationList* func_list, FunctionDeclaration* func);
-Declaration* cs_search_decl_in_block();
+Declaration* cs_search_decl_in_block(char* name);
+void cs_push_scope();
+void cs_pop_scope();
 Declaration* cs_search_decl_global(const char* name);
 FunctionDeclaration* cs_search_function(const char* name);
 ParameterList* cs_chain_parameter_list(ParameterList* list, CS_BasicType type,
