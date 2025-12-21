@@ -4,6 +4,8 @@
 
 #include "../memory/MEM.h"
 
+#include <string.h>
+
 static int depth = 0;
 
 static void increment() { depth++; }
@@ -355,21 +357,50 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     fprintf(stderr, "leave declstmt\n");
 }
 
+static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
+    print_depth();
+    fprintf(stderr, "enter blockstmt :\n");
+    increment();
+}
+
+static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
+    decrement();
+    print_depth();
+    fprintf(stderr, "leave blockstmt\n");
+}
+
 Visitor* create_treeview_visitor() {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;
     visit_stmt* enter_stmt_list;
     visit_stmt* leave_stmt_list;
 
+
     Visitor* visitor = MEM_malloc(sizeof(Visitor));
+    // enter_expr_list =
+    //     (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    // leave_expr_list =
+    //     (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    // enter_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
+    //                                           STATEMENT_TYPE_COUNT_PLUS_ONE);
+    // leave_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
+    //                                           STATEMENT_TYPE_COUNT_PLUS_ONE);
+
     enter_expr_list =
         (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    memset(enter_expr_list, 0, sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+
     leave_expr_list =
         (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    memset(leave_expr_list, 0, sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+
     enter_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
                                               STATEMENT_TYPE_COUNT_PLUS_ONE);
+    memset(enter_stmt_list, 0, sizeof(visit_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
+
     leave_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
                                               STATEMENT_TYPE_COUNT_PLUS_ONE);
+    memset(leave_stmt_list, 0, sizeof(visit_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
 
     enter_expr_list[BOOLEAN_EXPRESSION] = enter_boolexpr;
     enter_expr_list[INT_EXPRESSION] = enter_intexpr;
@@ -427,6 +458,9 @@ Visitor* create_treeview_visitor() {
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+
+    enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
+    leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
 
     visitor->enter_expr_list = enter_expr_list;
     visitor->leave_expr_list = leave_expr_list;
