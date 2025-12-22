@@ -204,6 +204,7 @@ typedef struct FunctionDeclarationList_tag {
 typedef struct LocalScope_tag {
     DeclarationList* decl_list;
     struct LocalScope_tag* outer;
+    int variable_count;
 } LocalScope;
 
 struct CS_Compiler_tag {
@@ -214,6 +215,7 @@ struct CS_Compiler_tag {
     FunctionDeclarationList* func_list;
     LocalScope* current_scope;
     int current_line;
+    uint32_t global_variable_count;
 };
 
 /* For Code Generation */
