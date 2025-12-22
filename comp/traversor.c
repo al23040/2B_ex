@@ -32,6 +32,13 @@ void traverse_stmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+void traverse_stmt_list(StatementList* list, Visitor* visitor) {
+    StatementList* sl = list;
+    for (; sl != NULL; sl = sl->next) {
+        traverse_stmt(sl->stmt, visitor);
+    }
+}
+
 static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
     switch (stmt->type) {
         case EXPRESSION_STATEMENT: {
@@ -40,6 +47,10 @@ static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
         }
         case DECLARATION_STATEMENT: {
             traverse_expr(stmt->u.declaration_s->initializer, visitor);
+            break;
+        }
+        case BLOCK_STATEMENT: {
+            traverse_stmt_list(stmt->u.block_statement_s->statement_list, visitor);
             break;
         }
         default: {

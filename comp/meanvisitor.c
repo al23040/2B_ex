@@ -74,8 +74,7 @@ static void leave_doubleexpr(Expression* expr, Visitor* visitor) {
 
 static void enter_identexpr(Expression* expr, Visitor* visitor) {}
 static void leave_identexpr(Expression* expr, Visitor* visitor) {
-    Declaration* decl = cs_search_decl_in_block();
-    FunctionDeclaration* function = NULL;
+    Declaration* decl = cs_search_decl_in_block(expr->u.identifier.name);
     if (!decl) {
         decl = cs_search_decl_global(expr->u.identifier.name);
     }
@@ -86,6 +85,8 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
         expr->u.identifier.is_function = CS_FALSE;
         return;
     }
+
+    FunctionDeclaration* function = NULL;
     function = cs_search_function(expr->u.identifier.name);
     if (function) {
         expr->type = function->type;
@@ -98,6 +99,14 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
     sprintf(message, "%d: Cannot find identifier %s", expr->line_number,
             expr->u.identifier.name);
     add_check_log(message, visitor);
+}
+
+static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
+    cs_push_scope();
+}
+
+static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
+    cs_pop_scope();
 }
 
 static CS_Boolean check_nulltype_binary_expr(Expression* expr,
@@ -516,8 +525,15 @@ static void leave_exprstmt(Statement* stmt, Visitor* visitor) {
 
 static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     CS_Compiler* compiler = ((MeanVisitor*)visitor)->compiler;
-    compiler->decl_list =
-        cs_chain_declaration(compiler->decl_list, stmt->u.declaration_s);
+    Declaration* decl = stmt->u.declaration_s;
+    if (compiler->current_scope) {
+        //fprintf(stderr, "TRACE: Registered [%s] to LOCAL scope\n", decl->name);
+        compiler->current_scope->decl_list = cs_chain_declaration(compiler->current_scope->decl_list, decl);
+    }
+    else {
+        //fprintf(stderr, "TRACE: Registered [%s] to GLOBAL scope\n", decl->name);
+        compiler->decl_list = cs_chain_declaration(compiler->decl_list, decl);
+    }
     //    fprintf(stderr, "enter declstmt\n");
 }
 
@@ -544,14 +560,31 @@ MeanVisitor* create_mean_visitor() {
         exit(1);
     }
 
+    // enter_expr_list =
+    //     (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    // leave_expr_list =
+    //     (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    // enter_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
+    //                                           STATEMENT_TYPE_COUNT_PLUS_ONE);
+    // leave_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
+    //                                           STATEMENT_TYPE_COUNT_PLUS_ONE);
+
+
     enter_expr_list =
         (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    memset(enter_expr_list, 0, sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+
     leave_expr_list =
         (visit_expr*)MEM_malloc(sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    memset(leave_expr_list, 0, sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+
     enter_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
                                               STATEMENT_TYPE_COUNT_PLUS_ONE);
+    memset(enter_stmt_list, 0, sizeof(visit_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
+
     leave_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
                                               STATEMENT_TYPE_COUNT_PLUS_ONE);
+    memset(leave_stmt_list, 0, sizeof(visit_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
 
     enter_expr_list[BOOLEAN_EXPRESSION] = enter_boolexpr;
     enter_expr_list[INT_EXPRESSION] = enter_intexpr;
@@ -609,6 +642,9 @@ MeanVisitor* create_mean_visitor() {
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+
+    enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
+    leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
 
     ((Visitor*)visitor)->enter_expr_list = enter_expr_list;
     ((Visitor*)visitor)->leave_expr_list = leave_expr_list;
