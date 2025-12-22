@@ -106,6 +106,7 @@ void cs_push_scope() {
 
     new_scope->decl_list = NULL;
     new_scope->outer = compiler->current_scope;
+    new_scope->variable_count = 0;
     compiler->current_scope = new_scope;
 }
 

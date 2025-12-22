@@ -130,6 +130,15 @@ static void enter_identexpr(Expression* expr, Visitor* visitor) {
 static void leave_identexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "leave identifierexpr\n");
     CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+
+    if (expr->type == NULL && !expr->u.identifier.is_function && expr->u.identifier.u.declaration != NULL) {
+        expr->type = expr->u.identifier.u.declaration->type;
+    }
+
+    if (expr->type == NULL) {
+        fprintf(stderr, "Error: Type is null for %s at line %d\n", expr->u.identifier.name, expr->line_number);
+        exit(1);
+    }
     switch (c_visitor->vi_state) {
         case VISIT_NORMAL: {
             //            fprintf(stderr, "push value to stack\n");
@@ -747,29 +756,33 @@ static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     //            get_type_name(stmt->u.declaration_s->type->basic_type));
 }
 
+static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
+    //もしかしたら後で定義
+}
+
+static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
+    //もしかしたら後で定義
+}
+
 static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     //    fprintf(stderr, "leave declstmt\n");
     if (stmt->u.declaration_s->initializer) {
-        Declaration* decl = cs_search_decl_in_block();  // dummy
-        if (!decl) {
-            decl = cs_search_decl_global(stmt->u.declaration_s->name);
+        CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+        Declaration* decl = stmt->u.declaration_s;
 
-            switch (decl->type->basic_type) {
-                case CS_BOOLEAN_TYPE:
-                case CS_INT_TYPE: {
-                    gen_byte_code((CodegenVisitor*)visitor, SVM_POP_STATIC_INT,
-                                  decl->index);
-                    break;
-                }
-                case CS_DOUBLE_TYPE: {
-                    gen_byte_code((CodegenVisitor*)visitor,
-                                  SVM_POP_STATIC_DOUBLE, decl->index);
-                    break;
-                }
-                default: {
-                    fprintf(stderr, "unknown type in leave_declstmt\n");
-                    exit(1);
-                }
+        switch (decl->type->basic_type) {
+            case CS_BOOLEAN_TYPE:
+            case CS_INT_TYPE: {
+                gen_byte_code(c_visitor, SVM_POP_STATIC_INT, decl->index);
+                break;
+            }
+            case CS_DOUBLE_TYPE: {
+                gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE, decl->index);
+                break;
+            }
+            default: {
+                fprintf(stderr, "unknown type in leave_declstmt\n");
+                exit(1);
             }
         }
     }
@@ -848,6 +861,7 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     enter_stmt_list[EXPRESSION_STATEMENT] = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT] = enter_declstmt;
+    enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
 
     notify_expr_list[ASSIGN_EXPRESSION] = notify_assignexpr;
 
@@ -879,6 +893,7 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+    leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
 
     ((Visitor*)visitor)->enter_expr_list = enter_expr_list;
     ((Visitor*)visitor)->leave_expr_list = leave_expr_list;
