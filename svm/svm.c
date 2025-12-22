@@ -529,6 +529,7 @@ static void svm_run(SVM_VirtualMachine* svm) {
                 push_d(svm, dv);
                 break;
             }
+            //ローカル変数を指すための変更
             case SVM_STORE_LOCAL:{
                 uint16_t offset = fetch2(svm);
                 SVM_Value v = svm->stack[--svm->sp];
@@ -545,6 +546,7 @@ static void svm_run(SVM_VirtualMachine* svm) {
                 svm->sp++;
                 break;
             }
+            
             case SVM_ADD_INT: {
                 int iv1 = pop_i(svm);
                 int iv2 = pop_i(svm);
