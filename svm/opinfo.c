@@ -54,4 +54,6 @@ OpcodeInfo svm_opcode_info[] = {
     {"invoke", "", -1},
     {"return", "", -1},
 
+    {"LOAD_LOCAL",  "i", 2 },
+    {"STORE_LOCAL", "i", 2 },
 };

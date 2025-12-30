@@ -50,7 +50,9 @@ typedef enum {
     SVM_POP,
     SVM_PUSH_FUNCTION,
     SVM_INVOKE,
-    SVM_RETURN
+    SVM_RETURN,
+    SVM_LOAD_LOCAL,
+    SVM_STORE_LOCAL,
 } SVM_Opcode;
 
 typedef enum {
@@ -106,6 +108,8 @@ struct SVM_VirtualMachine_tag {
     SVM_Value *stack;
     uint32_t pc;
     uint32_t sp;
+    
+    uint32_t fp;
 };
 
 extern OpcodeInfo svm_opcode_info[];
