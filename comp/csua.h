@@ -45,6 +45,7 @@ typedef struct {
     TypeSpecifier* type;
     Expression* initializer;
     int index;
+    CS_Boolean is_local;
 } Declaration;
 
 typedef struct ParameterList_tag {

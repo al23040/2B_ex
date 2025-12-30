@@ -528,11 +528,13 @@ static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     Declaration* decl = stmt->u.declaration_s;
     if (compiler->current_scope) {
         //fprintf(stderr, "TRACE: Registered [%s] to LOCAL scope\n", decl->name);
+        decl->is_local = CS_TRUE;
         decl->index = compiler->current_scope->variable_count++;
         compiler->current_scope->decl_list = cs_chain_declaration(compiler->current_scope->decl_list, decl);
     }
     else {
         //fprintf(stderr, "TRACE: Registered [%s] to GLOBAL scope\n", decl->name);
+        decl->is_local = CS_FALSE;
         decl->index = compiler->global_variable_count++;
         compiler->decl_list = cs_chain_declaration(compiler->decl_list, decl);
     }

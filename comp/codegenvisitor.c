@@ -139,120 +139,96 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
         fprintf(stderr, "Error: Type is null for %s at line %d\n", expr->u.identifier.name, expr->line_number);
         exit(1);
     }
+    
     switch (c_visitor->vi_state) {
         case VISIT_NORMAL: {
-            //            fprintf(stderr, "push value to stack\n");
             if (expr->u.identifier.is_function) {
-                //                printf("name=%s, index=%d\n",
-                //                        expr->u.identifier.u.function->name,
-                //                        expr->u.identifier.u.function->index);
-                gen_byte_code(c_visitor, SVM_PUSH_FUNCTION,
-                              expr->u.identifier.u.function->index);
-            } else {
-                switch (expr->type->basic_type) {
-                    case CS_BOOLEAN_TYPE:
-                    case CS_INT_TYPE: {
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
+                if (expr->u.identifier.is_function) {
+                    gen_byte_code(c_visitor, SVM_PUSH_FUNCTION, expr->u.identifier.u.function->index);
+                }
+                else {
+                    Declaration* decl = expr->u.identifier.u.declaration;
+                    if (decl->is_local) {
+                        gen_byte_code(c_visitor, SVM_LOAD_LOCAL, decl->index);
                     }
-                    case CS_DOUBLE_TYPE: {
-                        //                        fprintf(stderr, "double not
-                        //                        implementerd visit_nomal in
-                        //                        leave_identexpr
-                        //                        codegenvisitor\n"); exit(1);
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
+                    else {
+                        switch (expr->type->basic_type) {
+                            case CS_BOOLEAN_TYPE:
+                            case CS_INT_TYPE: {
+                                gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT, decl->index);
+                                break;
+                            }
+                            case CS_DOUBLE_TYPE: {
+                                gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT, decl->index);
+                                break;
+                            }
+                            default: {
+                                fprintf(stderr, "%d: unknown type in leave_identexpr\n", expr->line_number);
+                                exit(1);
+                            }
+                        }
                     }
-                    default: {
-                        fprintf(stderr,
-                                "%d: unknown type in visit_normal in "
-                                "leave_identexpr codegenvisitor\n",
-                                expr->line_number);
-                        exit(1);
+                }
+                break;
+            }
+        }
+
+        case VISIT_NOMAL_ASSIGN: {
+            if (!expr->u.identifier.is_function) {
+                Declaration* decl = expr->u.identifier.u.declaration;
+                if (decl->is_local) {
+                    gen_byte_code(c_visitor, SVM_STORE_LOCAL, decl->index);
+                }
+                else {
+                    switch (expr->type->basic_type) {
+                        case CS_BOOLEAN_TYPE:
+                        case CS_INT_TYPE: {
+                            gen_byte_code(c_visitor, SVM_POP_STATIC_INT, decl->index);
+                            break;
+                        }
+                        case CS_DOUBLE_TYPE: {
+                            gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE, decl->index);
+                            break;
+                        }
+                        default: {
+                            fprintf(stderr, "unknown type in assign leave_identexpr\n");
+                            exit(1);
+                        }
                     }
                 }
             }
-            break;
-        }
-        case VISIT_NOMAL_ASSIGN: {
-            // Variable is not a function, then store the value
-            if (!expr->u.identifier.is_function) {
-                //                fprintf(stderr, "index = %d\n",
-                //                expr->u.identifier.u.declaration->index);
-                //                fprintf(stderr, "type = %s\n",
-                //                get_type_name(expr->type->basic_type));
-                switch (expr->type->basic_type) {
-                    case CS_BOOLEAN_TYPE:
-                    case CS_INT_TYPE: {
-                        gen_byte_code(c_visitor, SVM_POP_STATIC_INT,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    case CS_DOUBLE_TYPE: {
-                        //                        fprintf(stderr, "double not
-                        //                        implementerd assign in
-                        //                        leave_identexpr
-                        //                        codegenvisitor\n"); exit(1);
-                        gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    default: {
-                        fprintf(
-                            stderr,
-                            "unknown type in leave_identexpr codegenvisitor\n");
-                        exit(1);
-                        gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                }
-            } else {
-                fprintf(stderr, "%d: cannot assign value to function\n",
-                        expr->line_number);
+            else {
+                fprintf(stderr, "%d: cannot assign value to function\n", expr->line_number);
                 exit(1);
             }
 
-            //            if (c_visitor->assign_depth > 1) { // nested assign
-            if ((c_visitor->assign_depth > 1) ||
-                (c_visitor->vf_state ==
-                 VISIT_F_CALL)) {  // nested assign or inside function call
-                switch (expr->type->basic_type) {
-                    case CS_BOOLEAN_TYPE:
-                    case CS_INT_TYPE: {
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    case CS_DOUBLE_TYPE: {
-                        //                        fprintf(stderr, "double not
-                        //                        implementerd assign_depth in
-                        //                        leave_identexpr
-                        //                        codegenvisitor\n"); exit(1);
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    default: {
-                        fprintf(stderr,
-                                "%d: unknown type in leave_identexpr "
-                                "codegenvisitor\n",
-                                expr->line_number);
-                        exit(1);
+            if ((c_visitor->assign_depth > 1) || (c_visitor->vf_state == VISIT_F_CALL)) {
+                Declaration* decl = expr->u.identifier.u.declaration;
+                if (decl->is_local) {
+                    gen_byte_code(c_visitor, SVM_LOAD_LOCAL, decl->index);
+                }
+                else {
+                    switch (expr->type->basic_type) {
+                        case CS_BOOLEAN_TYPE:
+                        case CS_INT_TYPE: {
+                            gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT, decl->index);
+                            break;
+                            }
+                            case CS_DOUBLE_TYPE: {
+                                gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE, decl->index);
+                                break;
+                            }
+                            default: {
+                                exit(1);
+                            }
                     }
                 }
             }
-
             break;
-        }
-        default: {
-            fprintf(stderr, "no such v_state error\n");
-            exit(1);
         }
     }
 }
+
 
 static void enter_addexpr(Expression* expr, Visitor* visitor) {
     //    fprintf(stderr, "enter addexpr : +\n");
