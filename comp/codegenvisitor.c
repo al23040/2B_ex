@@ -144,7 +144,6 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
             if (decl->is_local) {
                 gen_byte_code(c_visitor, SVM_LOAD_LOCAL, decl->index);
             } else {
-                // グローバル参照
                 if (expr->type->basic_type == CS_DOUBLE_TYPE) {
                     gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE, decl->index);
                 } else {
@@ -158,7 +157,6 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
             if (decl->is_local) {
                 gen_byte_code(c_visitor, SVM_STORE_LOCAL, decl->index);
             } else {
-                // グローバル代入
                 if (expr->type->basic_type == CS_DOUBLE_TYPE) {
                     gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE, decl->index);
                 } else {
@@ -166,7 +164,6 @@ static void leave_identexpr(Expression* expr, Visitor* visitor) {
                 }
             }
 
-            // 連続代入 (a = b = 10) のためのスタック積み直し
             if ((c_visitor->assign_depth > 1) || (c_visitor->vf_state == VISIT_F_CALL)) {
                 if (decl->is_local) {
                     gen_byte_code(c_visitor, SVM_LOAD_LOCAL, decl->index);
@@ -700,11 +697,9 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
         CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
         Declaration* decl = stmt->u.declaration_s;
 
-        // 修正ポイント: ローカルかグローバルかで命令を分ける
         if (decl->is_local) {
             gen_byte_code(c_visitor, SVM_STORE_LOCAL, decl->index);
         } else {
-            // グローバル変数の場合
             switch (decl->type->basic_type) {
                 case CS_BOOLEAN_TYPE:
                 case CS_INT_TYPE: {
