@@ -466,7 +466,7 @@ static void show_status(SVM_VirtualMachine* svm) {
         }
     }
     printf("\n--- stack ---\n");
-    for (int i = (svm->sp - 1); i >= 0; --i) {
+    for (int i = (svm->sp - 1); i >= 256; --i) {
         switch (svm->stack_value_type[i]) {
             case SVM_INT: {
                 printf("[%d:svm_int] = %d\n", i, svm->stack[i].ival);
