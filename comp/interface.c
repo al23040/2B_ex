@@ -16,6 +16,7 @@ CS_Compiler* CS_create_compiler() {
     compiler->decl_list = NULL;
     compiler->func_list = NULL;
     compiler->current_line = 1;
+    compiler->current_scope = NULL;
 
     cs_set_current_compiler(compiler);
 

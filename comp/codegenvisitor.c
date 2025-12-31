@@ -130,120 +130,59 @@ static void enter_identexpr(Expression* expr, Visitor* visitor) {
 static void leave_identexpr(Expression* expr, Visitor* visitor) {
     fprintf(stderr, "leave identifierexpr\n");
     CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+    Declaration* decl = expr->u.identifier.u.declaration;
+
+    if (expr->u.identifier.is_function) {
+        gen_byte_code(c_visitor, SVM_PUSH_FUNCTION, expr->u.identifier.u.function->index);
+        return;
+    }
+
+    if (decl == NULL) return;
+
     switch (c_visitor->vi_state) {
         case VISIT_NORMAL: {
-            //            fprintf(stderr, "push value to stack\n");
-            if (expr->u.identifier.is_function) {
-                //                printf("name=%s, index=%d\n",
-                //                        expr->u.identifier.u.function->name,
-                //                        expr->u.identifier.u.function->index);
-                gen_byte_code(c_visitor, SVM_PUSH_FUNCTION,
-                              expr->u.identifier.u.function->index);
+            if (decl->is_local) {
+                gen_byte_code(c_visitor, SVM_LOAD_LOCAL, decl->index);
             } else {
-                switch (expr->type->basic_type) {
-                    case CS_BOOLEAN_TYPE:
-                    case CS_INT_TYPE: {
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    case CS_DOUBLE_TYPE: {
-                        //                        fprintf(stderr, "double not
-                        //                        implementerd visit_nomal in
-                        //                        leave_identexpr
-                        //                        codegenvisitor\n"); exit(1);
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    default: {
-                        fprintf(stderr,
-                                "%d: unknown type in visit_normal in "
-                                "leave_identexpr codegenvisitor\n",
-                                expr->line_number);
-                        exit(1);
-                    }
+                // グローバル参照
+                if (expr->type->basic_type == CS_DOUBLE_TYPE) {
+                    gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE, decl->index);
+                } else {
+                    gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT, decl->index);
                 }
             }
             break;
         }
+
         case VISIT_NOMAL_ASSIGN: {
-            // Variable is not a function, then store the value
-            if (!expr->u.identifier.is_function) {
-                //                fprintf(stderr, "index = %d\n",
-                //                expr->u.identifier.u.declaration->index);
-                //                fprintf(stderr, "type = %s\n",
-                //                get_type_name(expr->type->basic_type));
-                switch (expr->type->basic_type) {
-                    case CS_BOOLEAN_TYPE:
-                    case CS_INT_TYPE: {
-                        gen_byte_code(c_visitor, SVM_POP_STATIC_INT,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    case CS_DOUBLE_TYPE: {
-                        //                        fprintf(stderr, "double not
-                        //                        implementerd assign in
-                        //                        leave_identexpr
-                        //                        codegenvisitor\n"); exit(1);
-                        gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    default: {
-                        fprintf(
-                            stderr,
-                            "unknown type in leave_identexpr codegenvisitor\n");
-                        exit(1);
-                        gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                }
+            if (decl->is_local) {
+                gen_byte_code(c_visitor, SVM_STORE_LOCAL, decl->index);
             } else {
-                fprintf(stderr, "%d: cannot assign value to function\n",
-                        expr->line_number);
-                exit(1);
-            }
-
-            //            if (c_visitor->assign_depth > 1) { // nested assign
-            if ((c_visitor->assign_depth > 1) ||
-                (c_visitor->vf_state ==
-                 VISIT_F_CALL)) {  // nested assign or inside function call
-                switch (expr->type->basic_type) {
-                    case CS_BOOLEAN_TYPE:
-                    case CS_INT_TYPE: {
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    case CS_DOUBLE_TYPE: {
-                        //                        fprintf(stderr, "double not
-                        //                        implementerd assign_depth in
-                        //                        leave_identexpr
-                        //                        codegenvisitor\n"); exit(1);
-                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE,
-                                      expr->u.identifier.u.declaration->index);
-                        break;
-                    }
-                    default: {
-                        fprintf(stderr,
-                                "%d: unknown type in leave_identexpr "
-                                "codegenvisitor\n",
-                                expr->line_number);
-                        exit(1);
-                    }
+                // グローバル代入
+                if (expr->type->basic_type == CS_DOUBLE_TYPE) {
+                    gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE, decl->index);
+                } else {
+                    gen_byte_code(c_visitor, SVM_POP_STATIC_INT, decl->index);
                 }
             }
 
+            // 連続代入 (a = b = 10) のためのスタック積み直し
+            if ((c_visitor->assign_depth > 1) || (c_visitor->vf_state == VISIT_F_CALL)) {
+                if (decl->is_local) {
+                    gen_byte_code(c_visitor, SVM_LOAD_LOCAL, decl->index);
+                } else {
+                    if (expr->type->basic_type == CS_DOUBLE_TYPE) {
+                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_DOUBLE, decl->index);
+                    } else {
+                        gen_byte_code(c_visitor, SVM_PUSH_STATIC_INT, decl->index);
+                    }
+                }
+            }
             break;
-        }
-        default: {
-            fprintf(stderr, "no such v_state error\n");
-            exit(1);
         }
     }
 }
+
 
 static void enter_addexpr(Expression* expr, Visitor* visitor) {
     //    fprintf(stderr, "enter addexpr : +\n");
@@ -747,23 +686,33 @@ static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     //            get_type_name(stmt->u.declaration_s->type->basic_type));
 }
 
+static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
+    //もしかしたら後で定義
+}
+
+static void leave_blockstmt(Statement* stmt, Visitor* visitor) {
+    //もしかしたら後で定義
+}
+
 static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     //    fprintf(stderr, "leave declstmt\n");
     if (stmt->u.declaration_s->initializer) {
-        Declaration* decl = cs_search_decl_in_block();  // dummy
-        if (!decl) {
-            decl = cs_search_decl_global(stmt->u.declaration_s->name);
+        CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+        Declaration* decl = stmt->u.declaration_s;
 
+        // 修正ポイント: ローカルかグローバルかで命令を分ける
+        if (decl->is_local) {
+            gen_byte_code(c_visitor, SVM_STORE_LOCAL, decl->index);
+        } else {
+            // グローバル変数の場合
             switch (decl->type->basic_type) {
                 case CS_BOOLEAN_TYPE:
                 case CS_INT_TYPE: {
-                    gen_byte_code((CodegenVisitor*)visitor, SVM_POP_STATIC_INT,
-                                  decl->index);
+                    gen_byte_code(c_visitor, SVM_POP_STATIC_INT, decl->index);
                     break;
                 }
                 case CS_DOUBLE_TYPE: {
-                    gen_byte_code((CodegenVisitor*)visitor,
-                                  SVM_POP_STATIC_DOUBLE, decl->index);
+                    gen_byte_code(c_visitor, SVM_POP_STATIC_DOUBLE, decl->index);
                     break;
                 }
                 default: {
@@ -848,6 +797,7 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     enter_stmt_list[EXPRESSION_STATEMENT] = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT] = enter_declstmt;
+    enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
 
     notify_expr_list[ASSIGN_EXPRESSION] = notify_assignexpr;
 
@@ -879,6 +829,7 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+    leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
 
     ((Visitor*)visitor)->enter_expr_list = enter_expr_list;
     ((Visitor*)visitor)->leave_expr_list = leave_expr_list;
