@@ -20,6 +20,11 @@ CS_Compiler* CS_create_compiler() {
 
     cs_set_current_compiler(compiler);
 
+    ParameterList* param = cs_create_parameter(CS_INT_TYPE, "val");
+    FunctionDeclaration* print_func = cs_create_function_declaration(CS_INT_TYPE, "print", param);
+
+    compiler->func_list = cs_chain_function_declaration_list(compiler->func_list, print_func);
+
     return compiler;
 }
 
