@@ -233,6 +233,7 @@ static void parse(uint8_t* buf, SVM_VirtualMachine* svm) {
     uint8_t* pos = buf;
     parse_header(&pos);
     svm->constant_pool_count = read_int(&pos);
+    svm->stack_size += 256;
     //    printf("constant_pool_count = %d\n", svm->constant_pool_count);
     svm->constant_pool = (SVM_Constant*)MEM_malloc(sizeof(SVM_Constant) *
                                                    svm->constant_pool_count);
@@ -424,7 +425,7 @@ static void init_svm(SVM_VirtualMachine* svm) {
     svm->stack_value_type =
         (uint8_t*)MEM_malloc(sizeof(uint8_t) * svm->stack_size);
     svm->pc = 0;
-    svm->sp = 0;
+    svm->sp = 256;
     svm->fp = 0;
 
     for (int i = 0; i < svm->global_variable_count; ++i) {
