@@ -57,6 +57,4 @@ OpcodeInfo svm_opcode_info[] = {
 
     {"LOAD_LOCAL",  "i", 2 },
     {"STORE_LOCAL", "i", 2 },
-
-    
 };
