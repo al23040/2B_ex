@@ -464,6 +464,10 @@ static void leave_funccallexpr(Expression* expr, Visitor* visitor) {
     }
 
     if (func_dec) {
+        if (strcmp(func_dec->name, "print") == 0) {
+            expr->type = func_dec->type;
+            return;
+        }
         ParameterList* params = func_dec->param;
         ArgumentList* args = f_expr->argument;
         int params_count, args_count;
