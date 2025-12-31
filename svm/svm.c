@@ -162,6 +162,8 @@ static void disasm(SVM_VirtualMachine* svm) {
             case SVM_PUSH_STATIC_INT:
             case SVM_PUSH_STATIC_DOUBLE:
             case SVM_PUSH_FUNCTION:
+            case SVM_LOAD_LOCAL:
+            case SVM_STORE_LOCAL:
             case SVM_POP:
             case SVM_ADD_INT:
             case SVM_ADD_DOUBLE:
@@ -305,6 +307,7 @@ static SVM_VirtualMachine* svm_create() {
     svm->stack_value_type = NULL;
     svm->pc = 0;
     svm->sp = 0;
+    svm->fp = 0;
     return svm;
 }
 
@@ -422,6 +425,7 @@ static void init_svm(SVM_VirtualMachine* svm) {
         (uint8_t*)MEM_malloc(sizeof(uint8_t) * svm->stack_size);
     svm->pc = 0;
     svm->sp = 0;
+    svm->fp = 0;
 
     for (int i = 0; i < svm->global_variable_count; ++i) {
         switch (svm->global_variable_types[i]) {
@@ -525,6 +529,24 @@ static void svm_run(SVM_VirtualMachine* svm) {
                 push_d(svm, dv);
                 break;
             }
+            //ローカル変数を指すための変更
+            case SVM_STORE_LOCAL:{
+                uint16_t offset = fetch2(svm);
+                SVM_Value v = svm->stack[--svm->sp];
+                svm->stack[svm->fp + offset] = v;
+                svm->stack_value_type[svm->fp + offset] = svm->stack_value_type[svm->sp];
+                break;
+            }
+            case SVM_LOAD_LOCAL: {
+                uint16_t offset = fetch2(svm);
+                SVM_Value v = svm->stack[svm->fp + offset];
+                svm->stack[svm->sp] = v;
+                svm->stack_value_type[svm->sp] =
+                    svm->stack_value_type[svm->fp + offset];
+                svm->sp++;
+                break;
+            }
+            
             case SVM_ADD_INT: {
                 int iv1 = pop_i(svm);
                 int iv2 = pop_i(svm);
