@@ -262,4 +262,5 @@ Statement* cs_create_while_statement(Expression* condition, Statement* loop_body
     stmt->type = WHILE_STATEMENT;
     stmt->u.while_s.condition = condition;
     stmt->u.while_s.loop_body = loop_body;
+    return stmt;
 }
