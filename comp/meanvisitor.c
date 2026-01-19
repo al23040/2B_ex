@@ -597,6 +597,14 @@ static void leave_returnstmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+static void enter_whilestmt(Statement* stmt, Visitor* visitor) {
+
+}
+
+static void leave_whilestmt(Statement* stmt, Visitor* visitor) {
+    check_condition_expression(stmt->u.while_s.condition, visitor);
+}
+
 MeanVisitor* create_mean_visitor() {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;
@@ -667,6 +675,8 @@ MeanVisitor* create_mean_visitor() {
     enter_stmt_list[IF_STATEMENT] = enter_ifstmt;
     enter_stmt_list[RETURN_STATEMENT] = enter_returnstmt;
 
+    enter_stmt_list[WHILE_STATEMENT] = enter_whilestmt;
+
     leave_expr_list[BOOLEAN_EXPRESSION] = leave_boolexpr;
     leave_expr_list[INT_EXPRESSION] = leave_intexpr;
     leave_expr_list[DOUBLE_EXPRESSION] = leave_doubleexpr;
@@ -697,6 +707,8 @@ MeanVisitor* create_mean_visitor() {
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
     leave_stmt_list[IF_STATEMENT] = leave_ifstmt;
     leave_stmt_list[RETURN_STATEMENT] = leave_returnstmt;
+
+    leave_stmt_list[WHILE_STATEMENT] = leave_whilestmt;
 
     enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
     leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;

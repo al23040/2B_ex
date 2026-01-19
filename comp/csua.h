@@ -170,6 +170,7 @@ typedef enum {
     BLOCK_STATEMENT, //ブロック文の識別子
     IF_STATEMENT,
     RETURN_STATEMENT,
+    WHILE_STATEMENT,
     STATEMENT_TYPE_COUNT_PLUS_ONE
 } StatementType;
 
