@@ -87,6 +87,7 @@ int yylex();
 %type <statement_list> declaration_or_statement_list
 %type <statement> selection_statement
 %type <statement> return_statement
+%type <statement> while_statement
 
 %%
 translation_unit
@@ -139,6 +140,7 @@ statement
         | compound_statement { $$ = $1; }
         | selection_statement { $$ = $1; }
         | return_statement { $$ = $1; }
+		| while_statement {$$ = $1; }
 	;
         
 declaration_statement
@@ -173,6 +175,13 @@ return_statement
             $$ = cs_create_return_statement(NULL);
         }
         ;
+
+while_statement
+        : WHILE LP expression RP compound_statement
+        {
+			$$ = cs_create_while_statement($3, $5);
+        }
+		;
 
 type_specifier
         : BOOLEAN_T { $$ = CS_BOOLEAN_TYPE; }
