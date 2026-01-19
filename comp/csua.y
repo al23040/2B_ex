@@ -85,6 +85,8 @@ int yylex();
 
 %type <statement> compound_statement
 %type <statement_list> declaration_or_statement_list
+%type <statement> selection_statement
+%type <statement> return_statement
 
 %%
 translation_unit
@@ -135,6 +137,8 @@ statement
         }
         | declaration_statement { /*printf("declaration_statement\n"); */}
         | compound_statement { $$ = $1; }
+        | selection_statement { $$ = $1; }
+        | return_statement { $$ = $1; }
 	;
         
 declaration_statement
@@ -147,8 +151,29 @@ declaration_statement
             $$ = cs_create_declaration_statement($1, $2, $4); 
         }
         ;
+
+selection_statement
+        : IF LP expression RP compound_statement
+        {
+            $$ = cs_create_if_statement($3, $5, NULL);
+        }
+        | IF LP expression RP compound_statement ELSE compound_statement
+        {
+            $$ = cs_create_if_statement($3, $5, $7);
+        }
+        ;
         
-        
+return_statement
+        : RETURN expression SEMICOLON
+        {
+            $$ = cs_create_return_statement($2);
+        }
+        | RETURN SEMICOLON
+        {
+            $$ = cs_create_return_statement(NULL);
+        }
+        ;
+
 type_specifier
         : BOOLEAN_T { $$ = CS_BOOLEAN_TYPE; }
         | INT_T     { $$ = CS_INT_TYPE;     }

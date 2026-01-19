@@ -357,6 +357,30 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     fprintf(stderr, "leave declstmt\n");
 }
 
+static void enter_ifstmt(Statement* stmt, Visitor* visitor) {
+    print_depth();
+    fprintf(stderr, "enter ifstmt :\n");
+    increment();
+}
+
+static void leave_ifstmt(Statement* stmt, Visitor* visitor) {
+    decrement();
+    print_depth();
+    fprintf(stderr, "leave ifstmt\n");
+}
+
+static void enter_returnstmt(Statement* stmt, Visitor* visitor) {
+    print_depth();
+    fprintf(stderr, "enter returnstmt :\n");
+    increment();
+}
+
+static void leave_returnstmt(Statement* stmt, Visitor* visitor) {
+    decrement();
+    print_depth();
+    fprintf(stderr, "leave returnstmt\n");
+}
+
 static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
     print_depth();
     fprintf(stderr, "enter blockstmt :\n");
@@ -429,6 +453,8 @@ Visitor* create_treeview_visitor() {
 
     enter_stmt_list[EXPRESSION_STATEMENT] = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT] = enter_declstmt;
+    enter_stmt_list[IF_STATEMENT] = enter_ifstmt;
+    enter_stmt_list[RETURN_STATEMENT] = enter_returnstmt;
 
     leave_expr_list[BOOLEAN_EXPRESSION] = leave_boolexpr;
     leave_expr_list[INT_EXPRESSION] = leave_intexpr;
@@ -458,6 +484,8 @@ Visitor* create_treeview_visitor() {
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+    leave_stmt_list[IF_STATEMENT] = leave_ifstmt;
+    leave_stmt_list[RETURN_STATEMENT] = leave_returnstmt;
 
     enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
     leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
@@ -467,6 +495,8 @@ Visitor* create_treeview_visitor() {
     visitor->enter_stmt_list = enter_stmt_list;
     visitor->leave_stmt_list = leave_stmt_list;
     visitor->notify_expr_list = NULL;
+    visitor->notify_if_cond_list = NULL;
+    visitor->notify_if_then_list = NULL;
 
     return visitor;
 }

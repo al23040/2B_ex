@@ -194,7 +194,10 @@ static void disasm(SVM_VirtualMachine* svm) {
             case SVM_MINUS_DOUBLE:
             case SVM_INCREMENT:
             case SVM_DECREMENT:
-            case SVM_INVOKE: {
+            case SVM_INVOKE: 
+            case SVM_RETURN:
+            case SVM_JUMP:
+            case SVM_JUMP_IF_FALSE: {
                 //                printf("%s\n", oinfo->opname);
                 add_opname(&dinfo, oinfo->opname);
                 break;
@@ -757,6 +760,23 @@ static void svm_run(SVM_VirtualMachine* svm) {
                 pop_i(svm);
                 break;
             }
+            case SVM_RETURN: {
+                running = false;
+                break;
+            }
+            case SVM_JUMP: {
+                uint16_t addr = fetch2(svm);
+                svm -> pc = addr;
+                break;
+            }
+            case SVM_JUMP_IF_FALSE: {
+                uint16_t addr = fetch2(svm);
+                int condition = pop_i(svm);
+                if(condition == 0) {
+                    svm -> pc = addr;
+                }
+                break;
+            }
             default: {
                 fprintf(stderr, "unknown opcode: %02x in svm_run\n", op);
                 show_status(svm);
@@ -771,6 +791,7 @@ static void svm_run(SVM_VirtualMachine* svm) {
 
 int main(int argc, char* argv[]) {
     // for test
+    printf("DEBUG: PROGRAM START - VERSION 1.0\n");
     bool disasm_mode = false;
     int file_idx = 1;
     if (argc < 2) {

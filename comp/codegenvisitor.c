@@ -48,6 +48,12 @@ static void gen_byte_code(CodegenVisitor* visitor, SVM_Opcode op, ...) {
     va_end(ap);
 }
 
+//条件式の時点ではelseブロックが何バイト先にあるか計算できないので新しい関数を作る
+static void patch_2byte_address(CodegenVisitor* visitor, uint32_t pos, uint16_t addr) {
+    visitor->code[pos] = (addr >> 8) & 0xff;
+    visitor->code[pos + 1] = addr & 0xff;
+}
+
 static int add_constant(CS_Executable* exec, CS_ConstantPool* cpp) {
     exec->constant_pool =
         MEM_realloc(exec->constant_pool,
@@ -631,7 +637,7 @@ static void notify_assignexpr(Expression* expr, Visitor* visitor) {
             break;
         }
         case ASSIGN_PLUS_ONE:
-        defualt : {
+        default : {
             fprintf(stderr, "unsuuuport4ed assign operator\n");
             exit(1);
         }
@@ -683,6 +689,56 @@ static void enter_declstmt(Statement* stmt, Visitor* visitor) {
     //            get_type_name(stmt->u.declaration_s->type->basic_type));
 }
 
+//条件式が終わった時
+static void notify_if_cond(Statement* stmt, Visitor* visitor) {
+    CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+    //ジャンプ先のアドレスがまだわからないので一旦0にしておく
+    gen_byte_code(c_visitor, SVM_JUMP_IF_FALSE, 0);
+    //今書いた"0"というアドレスの位置をIfstatement構造体に記録しておく
+    stmt->u.if_s.jump_if_false_pos = c_visitor->pos - 2;
+}
+
+//thenブロックが終わった時
+static void notify_if_then(Statement* stmt, Visitor* visitor) {
+    CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+
+    if(stmt->u.if_s.else_block) {
+        //elseブロックがある場合, thenの終わりにelseを飛び越えるジャンプを記述
+        gen_byte_code(c_visitor, SVM_JUMP, 0);
+        stmt->u.if_s.jump_at_then_end_pos = c_visitor->pos - 2;
+    }
+    /*
+        ここがelseブロックの開始地点なので、
+        JUMP_IF_FALSEの飛び先を今の位置に変える。
+    */
+    patch_2byte_address(c_visitor, stmt->u.if_s.jump_if_false_pos, (uint16_t)c_visitor->pos);
+}
+
+static void enter_ifstmt(Statement* stmt, Visitor* visitor) {
+    CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+}
+
+//if文全体の処理が終わった時
+static void leave_ifstmt(Statement* stmt, Visitor* visitor) {
+    CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+    if(stmt->u.if_s.else_block) {
+        /*
+            thenの終わりに書いたelseを飛び越えるジャンプの飛び先を
+            今（つまり、elseが終わった場所）に書き換える。
+        */
+        patch_2byte_address(c_visitor, stmt->u.if_s.jump_at_then_end_pos, (uint16_t)c_visitor->pos);
+    }
+}
+
+static void enter_returnstmt(Statement* stmt, Visitor* visitor) {
+    
+}
+
+static void leave_returnstmt(Statement* stmt, Visitor* visitor) {
+    CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+    gen_byte_code(c_visitor, SVM_RETURN);
+}
+
 static void enter_blockstmt(Statement* stmt, Visitor* visitor) {
     //もしかしたら後で定義
 }
@@ -728,6 +784,9 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     visit_expr* notify_expr_list;
 
+    notify_stmt* notify_if_cond_list;
+    notify_stmt* notify_if_then_list;
+
     if (compiler == NULL || exec == NULL) {
         fprintf(stderr, "Compiler or Executable is NULL\n");
         exit(1);
@@ -756,14 +815,21 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
                                               STATEMENT_TYPE_COUNT_PLUS_ONE);
     leave_stmt_list = (visit_stmt*)MEM_malloc(sizeof(visit_stmt) *
                                               STATEMENT_TYPE_COUNT_PLUS_ONE);
+    
+    notify_if_cond_list = (notify_stmt*)MEM_malloc(sizeof(notify_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
+    notify_if_then_list = (notify_stmt*)MEM_malloc(sizeof(notify_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
 
     memset(enter_expr_list, 0, sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
     memset(leave_expr_list, 0, sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
     memset(notify_expr_list, 0, sizeof(visit_expr) * EXPRESSION_KIND_PLUS_ONE);
+    // sizeof(visit_expr)になってた.
     memset(enter_stmt_list, 0,
-           sizeof(visit_expr) * STATEMENT_TYPE_COUNT_PLUS_ONE);
+           sizeof(visit_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
     memset(leave_stmt_list, 0,
-           sizeof(visit_expr) * STATEMENT_TYPE_COUNT_PLUS_ONE);
+           sizeof(visit_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
+
+    memset(notify_if_cond_list, 0, sizeof(notify_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
+    memset(notify_if_then_list, 0, sizeof(notify_stmt) * STATEMENT_TYPE_COUNT_PLUS_ONE);
 
     enter_expr_list[BOOLEAN_EXPRESSION] = enter_boolexpr;
     enter_expr_list[INT_EXPRESSION] = enter_intexpr;
@@ -792,9 +858,13 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     enter_stmt_list[EXPRESSION_STATEMENT] = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT] = enter_declstmt;
+    enter_stmt_list[IF_STATEMENT] = enter_ifstmt;
+    enter_stmt_list[RETURN_STATEMENT] = enter_returnstmt;
     enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
 
     notify_expr_list[ASSIGN_EXPRESSION] = notify_assignexpr;
+    notify_if_cond_list[IF_STATEMENT] = notify_if_cond;
+    notify_if_then_list[IF_STATEMENT] = notify_if_then;
 
     leave_expr_list[BOOLEAN_EXPRESSION] = leave_boolexpr;
     leave_expr_list[INT_EXPRESSION] = leave_intexpr;
@@ -824,6 +894,8 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+    leave_stmt_list[IF_STATEMENT] = leave_ifstmt;
+    leave_stmt_list[RETURN_STATEMENT] = leave_returnstmt;
     leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
 
     ((Visitor*)visitor)->enter_expr_list = enter_expr_list;
@@ -832,6 +904,9 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
     ((Visitor*)visitor)->leave_stmt_list = leave_stmt_list;
 
     ((Visitor*)visitor)->notify_expr_list = notify_expr_list;
+
+    ((Visitor*)visitor)->notify_if_cond_list = notify_if_cond_list;
+    ((Visitor*)visitor)->notify_if_then_list = notify_if_then_list; 
 
     return visitor;
 }

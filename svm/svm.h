@@ -53,6 +53,8 @@ typedef enum {
     SVM_RETURN,
     SVM_LOAD_LOCAL,
     SVM_STORE_LOCAL,
+    SVM_JUMP,
+    SVM_JUMP_IF_FALSE,
 } SVM_Opcode;
 
 typedef enum {

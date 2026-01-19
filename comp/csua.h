@@ -168,8 +168,22 @@ typedef enum {
     EXPRESSION_STATEMENT = 1,
     DECLARATION_STATEMENT,
     BLOCK_STATEMENT, //ブロック文の識別子
-    STATEMENT_TYPE_COUNT_PLUS_ONE,
+    IF_STATEMENT,
+    RETURN_STATEMENT,
+    STATEMENT_TYPE_COUNT_PLUS_ONE
 } StatementType;
+
+typedef struct {
+    Expression* condition;
+    Statement* then_block;
+    Statement* else_block;
+    uint32_t jump_if_false_pos; //SVM_JUMP_IF_FALSE命令のオペランドの位置
+    uint32_t jump_at_then_end_pos;  //thenブロック終わりのSVM_JUMP命令のオペランドの位置
+}IfStatement;
+
+typedef struct {
+    Expression* return_value;
+}ReturnStatement;
 
 struct Statement_tag {
     StatementType type;
@@ -178,6 +192,8 @@ struct Statement_tag {
         Expression* expression_s;
         Declaration* declaration_s;
         BlockStatement* block_statement_s;
+        IfStatement if_s;
+        ReturnStatement return_s;
     } u;
 };
 
@@ -273,6 +289,10 @@ Statement* cs_create_expression_statement(Expression* expr);
 Statement* cs_create_declaration_statement(CS_BasicType type, char* name,
                                            Expression* initializer);
 StatementList* cs_create_statement_list(Statement* stmt);
+
+// Declaration for if_statement.
+Statement* cs_create_if_statement(Expression* condition, Statement* then_block, Statement* else_block);
+Statement* cs_create_return_statement(Expression* return_value);
 
 DeclarationList* cs_create_declaration_list(Declaration* decl);
 TypeSpecifier* cs_create_type_specifier(CS_BasicType type);
