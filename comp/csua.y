@@ -139,6 +139,7 @@ statement
         | compound_statement { $$ = $1; }
         | selection_statement { $$ = $1; }
         | return_statement { $$ = $1; }
+		| while_statement {$$ = $1; }
 	;
         
 declaration_statement
@@ -173,6 +174,13 @@ return_statement
             $$ = cs_create_return_statement(NULL);
         }
         ;
+
+while_statement
+        : WHILE LP expression RP compound_statement
+        {
+			$$ = create_while_statement($3, $5);
+        }
+		;
 
 type_specifier
         : BOOLEAN_T { $$ = CS_BOOLEAN_TYPE; }
