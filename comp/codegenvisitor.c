@@ -730,6 +730,30 @@ static void leave_ifstmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+static void notify_while_cond(Statement* stmt, Visitor* visitor){
+    CodegenVisitor* c_visitor = (CodegenVisitor*) visitor;
+
+    gen_byte_code(c_visitor,SVM_JUMP_IF_FALSE,0);
+    stmt->u.while_s.jump_at_if_false_pos = c_visitor->pos-2;
+}
+
+static void enter_whilestmt(Statement* stmt, Visitor* visitor){
+    CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+    stmt->u.while_s.loop_begin_pos = c_visitor->pos;
+}
+
+static void leave_whilestmt(Statement* stmt,Visitor* visitor){
+    CodegenVisitor* c_visitor = (CodegenVisitor*)visitor;
+
+    // ループ先頭へ戻る
+    gen_byte_code(c_visitor, SVM_JUMP, (int)stmt->u.while_s.loop_begin_pos);
+
+    // ループを抜けた先(=今のpos)を、JUMP_IF_FALSEに書き換える
+    patch_2byte_address(c_visitor,
+        stmt->u.while_s.jump_at_if_false_pos,
+        (uint16_t)c_visitor->pos);
+}
+
 static void enter_returnstmt(Statement* stmt, Visitor* visitor) {
     
 }
@@ -786,6 +810,7 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
 
     notify_stmt* notify_if_cond_list;
     notify_stmt* notify_if_then_list;
+
 
     if (compiler == NULL || exec == NULL) {
         fprintf(stderr, "Compiler or Executable is NULL\n");
@@ -861,10 +886,13 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
     enter_stmt_list[IF_STATEMENT] = enter_ifstmt;
     enter_stmt_list[RETURN_STATEMENT] = enter_returnstmt;
     enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
+    enter_stmt_list[WHILE_STATEMENT] = enter_whilestmt;
 
     notify_expr_list[ASSIGN_EXPRESSION] = notify_assignexpr;
     notify_if_cond_list[IF_STATEMENT] = notify_if_cond;
     notify_if_then_list[IF_STATEMENT] = notify_if_then;
+    notify_if_cond_list[WHILE_STATEMENT] = notify_while_cond; 
+
 
     leave_expr_list[BOOLEAN_EXPRESSION] = leave_boolexpr;
     leave_expr_list[INT_EXPRESSION] = leave_intexpr;
@@ -897,6 +925,7 @@ CodegenVisitor* create_codegen_visitor(CS_Compiler* compiler,
     leave_stmt_list[IF_STATEMENT] = leave_ifstmt;
     leave_stmt_list[RETURN_STATEMENT] = leave_returnstmt;
     leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
+    leave_stmt_list[WHILE_STATEMENT] = leave_whilestmt;
 
     ((Visitor*)visitor)->enter_expr_list = enter_expr_list;
     ((Visitor*)visitor)->leave_expr_list = leave_expr_list;

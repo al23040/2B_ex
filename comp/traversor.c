@@ -80,6 +80,14 @@ static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
             }
             break;
         }
+        case WHILE_STATEMENT: {
+            traverse_expr(stmt->u.while_s.condition, visitor);
+            if (visitor->notify_if_cond_list != NULL && visitor->notify_if_cond_list[WHILE_STATEMENT] != NULL) {
+                visitor->notify_if_cond_list[WHILE_STATEMENT](stmt, visitor);
+            }
+            traverse_stmt(stmt->u.while_s.loop_body, visitor);
+            break;
+        }
         default: {
             fprintf(stderr, "No such stmt->type %d in traverse_stmt_children\n",
                     stmt->type);
