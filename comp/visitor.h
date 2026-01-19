@@ -10,6 +10,8 @@
 typedef void (*visit_expr)(Expression* expr, Visitor* visitor);
 typedef void (*visit_stmt)(Statement* stmt, Visitor* visitor);
 
+typedef void (*notify_stmt)(Statement* stmt, Visitor* visitor);
+
 typedef struct MeanCheckLog_tag {
     char* log_str;
     struct MeanCheckLog_tag* next;
@@ -23,6 +25,9 @@ struct Visitor_tag {
 
     visit_stmt* enter_stmt_list;
     visit_stmt* leave_stmt_list;
+    //中間通知用の型定義.
+    notify_stmt* notify_if_cond_list;
+    notify_stmt* notify_if_then_list;
 };
 
 struct MeanVisitor_tag {

@@ -554,6 +554,49 @@ static void leave_declstmt(Statement* stmt, Visitor* visitor) {
     }
 }
 
+static void check_condition_expression(Expression* expr, Visitor* visitor) {
+    if(expr->type == NULL) {
+        char msg[100];
+        sprintf(msg, "%d: Condition expression has no type", expr->line_number);
+        add_check_log(msg, visitor);
+        return;
+    }
+
+    if(cs_is_int(expr->type) || cs_is_boolean(expr->type)) {
+        return;
+    } else {
+        char msg[100];
+        sprintf(msg, "%d: Condition must be int or boolean, but found %s", expr->line_number,get_type_name(expr->type->basic_type));
+        add_check_log(msg, visitor);
+        return;
+    }
+}
+
+static void enter_ifstmt(Statement* stmt, Visitor* visitor) {
+
+}
+
+static void leave_ifstmt(Statement* stmt, Visitor* visitor) {
+    check_condition_expression(stmt->u.if_s.condition, visitor);
+}
+
+static void enter_returnstmt(Statement* stmt, Visitor* visitor) {
+
+}
+
+static void leave_returnstmt(Statement* stmt, Visitor* visitor) {
+    Expression* expr = stmt->u.return_s.return_value;
+    if(expr == NULL) {
+        return;
+    }
+
+    if(expr->type == NULL) {
+        char message[100];
+        sprintf(message, "%d: Cannot find return type", stmt->line_number);
+        add_check_log(message, visitor);
+    }
+}
+
 MeanVisitor* create_mean_visitor() {
     visit_expr* enter_expr_list;
     visit_expr* leave_expr_list;
@@ -621,6 +664,8 @@ MeanVisitor* create_mean_visitor() {
 
     enter_stmt_list[EXPRESSION_STATEMENT] = enter_exprstmt;
     enter_stmt_list[DECLARATION_STATEMENT] = enter_declstmt;
+    enter_stmt_list[IF_STATEMENT] = enter_ifstmt;
+    enter_stmt_list[RETURN_STATEMENT] = enter_returnstmt;
 
     leave_expr_list[BOOLEAN_EXPRESSION] = leave_boolexpr;
     leave_expr_list[INT_EXPRESSION] = leave_intexpr;
@@ -650,6 +695,8 @@ MeanVisitor* create_mean_visitor() {
 
     leave_stmt_list[EXPRESSION_STATEMENT] = leave_exprstmt;
     leave_stmt_list[DECLARATION_STATEMENT] = leave_declstmt;
+    leave_stmt_list[IF_STATEMENT] = leave_ifstmt;
+    leave_stmt_list[RETURN_STATEMENT] = leave_returnstmt;
 
     enter_stmt_list[BLOCK_STATEMENT] = enter_blockstmt;
     leave_stmt_list[BLOCK_STATEMENT] = leave_blockstmt;
@@ -659,6 +706,8 @@ MeanVisitor* create_mean_visitor() {
     ((Visitor*)visitor)->enter_stmt_list = enter_stmt_list;
     ((Visitor*)visitor)->leave_stmt_list = leave_stmt_list;
     ((Visitor*)visitor)->notify_expr_list = NULL;
+    ((Visitor*)visitor)->notify_if_cond_list = NULL;
+    ((Visitor*)visitor)->notify_if_then_list = NULL;
 
     return visitor;
 }

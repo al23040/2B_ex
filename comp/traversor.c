@@ -53,6 +53,33 @@ static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
             traverse_stmt_list(stmt->u.block_statement_s->statement_list, visitor);
             break;
         }
+        case IF_STATEMENT: {
+            //条件式
+            traverse_expr(stmt->u.if_s.condition, visitor);
+            // // --- デバッグプリントを追加 ---
+            // fprintf(stderr, "DEBUG: visitor addr in traversor = %p\n", (void*)visitor);
+            // fprintf(stderr, "DEBUG: notify_if_cond_list addr = %p\n", (void*)visitor->notify_if_cond_list);
+            // // ----------------------------
+            if (visitor->notify_if_cond_list != NULL && visitor->notify_if_cond_list[IF_STATEMENT] != NULL) {
+                visitor->notify_if_cond_list[IF_STATEMENT](stmt, visitor);
+            }
+            //then
+            traverse_stmt(stmt->u.if_s.then_block, visitor);
+            if(visitor->notify_if_then_list && visitor->notify_if_then_list[IF_STATEMENT]) {
+                visitor->notify_if_then_list[IF_STATEMENT](stmt, visitor);
+            }
+            //else
+            if(stmt->u.if_s.else_block != NULL) {
+                traverse_stmt(stmt->u.if_s.else_block, visitor);
+            }
+            break;
+        }
+        case RETURN_STATEMENT: {
+            if(stmt->u.return_s.return_value != NULL) {
+                traverse_expr(stmt->u.return_s.return_value, visitor);
+            }
+            break;
+        }
         default: {
             fprintf(stderr, "No such stmt->type %d in traverse_stmt_children\n",
                     stmt->type);

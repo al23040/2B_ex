@@ -241,3 +241,18 @@ Statement* cs_create_block_statement(StatementList* list) {
     stmt->u.block_statement_s->statement_list = list;
     return stmt;
 }
+
+Statement* cs_create_if_statement(Expression* condition, Statement* then_block, Statement* else_block) {
+    Statement* stmt = cs_create_statement(IF_STATEMENT);
+    stmt->type = IF_STATEMENT;
+    stmt->u.if_s.condition = condition;
+    stmt->u.if_s.then_block = then_block;
+    stmt->u.if_s.else_block = else_block;
+    return stmt;
+}
+
+Statement* cs_create_return_statement(Expression* expr) {
+    Statement* stmt = cs_create_statement(RETURN_STATEMENT);
+    stmt->u.return_s.return_value = expr;
+    return stmt;
+}
