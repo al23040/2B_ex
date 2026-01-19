@@ -185,6 +185,11 @@ typedef struct {
     Expression* return_value;
 }ReturnStatement;
 
+typedef struct {
+    Expression* condition;
+    Statement* loop_body;
+}WhileStatement;
+
 struct Statement_tag {
     StatementType type;
     int line_number;
@@ -194,6 +199,7 @@ struct Statement_tag {
         BlockStatement* block_statement_s;
         IfStatement if_s;
         ReturnStatement return_s;
+        WhileStatement while_s;
     } u;
 };
 
@@ -293,6 +299,8 @@ StatementList* cs_create_statement_list(Statement* stmt);
 // Declaration for if_statement.
 Statement* cs_create_if_statement(Expression* condition, Statement* then_block, Statement* else_block);
 Statement* cs_create_return_statement(Expression* return_value);
+// Declaration for while statement
+Statement* cs_create_while_statement(Expression* condition, Statement* loop_body);
 
 DeclarationList* cs_create_declaration_list(Declaration* decl);
 TypeSpecifier* cs_create_type_specifier(CS_BasicType type);

@@ -87,6 +87,7 @@ int yylex();
 %type <statement_list> declaration_or_statement_list
 %type <statement> selection_statement
 %type <statement> return_statement
+%type <statement> while_statement
 
 %%
 translation_unit
@@ -178,7 +179,7 @@ return_statement
 while_statement
         : WHILE LP expression RP compound_statement
         {
-			$$ = create_while_statement($3, $5);
+			$$ = cs_create_while_statement($3, $5);
         }
 		;
 
