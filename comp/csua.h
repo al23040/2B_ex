@@ -189,6 +189,8 @@ typedef struct {
 typedef struct {
     Expression* condition;
     Statement* loop_body;
+    uint32_t loop_begin_pos; 
+    uint32_t jump_at_if_false_pos;  
 }WhileStatement;
 
 struct Statement_tag {
