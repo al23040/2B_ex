@@ -82,6 +82,9 @@ static void traverse_stmt_children(Statement* stmt, Visitor* visitor) {
         }
         case WHILE_STATEMENT: {
             traverse_expr(stmt->u.while_s.condition, visitor);
+            if (visitor->notify_if_cond_list != NULL && visitor->notify_if_cond_list[WHILE_STATEMENT] != NULL) {
+                visitor->notify_if_cond_list[WHILE_STATEMENT](stmt, visitor);
+            }
             traverse_stmt(stmt->u.while_s.loop_body, visitor);
             break;
         }

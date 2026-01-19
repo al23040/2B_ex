@@ -734,7 +734,7 @@ static void notify_while_cond(Statement* stmt, Visitor* visitor){
     CodegenVisitor* c_visitor = (CodegenVisitor*) visitor;
 
     gen_byte_code(c_visitor,SVM_JUMP_IF_FALSE,0);
-    stmt->u.while_s.jump_if_false_pos = c_visitor->pos-2;
+    stmt->u.while_s.jump_at_if_false_pos = c_visitor->pos-2;
 }
 
 static void enter_whilestmt(Statement* stmt, Visitor* visitor){
@@ -750,7 +750,7 @@ static void leave_whilestmt(Statement* stmt,Visitor* visitor){
 
     // ループを抜けた先(=今のpos)を、JUMP_IF_FALSEに書き換える
     patch_2byte_address(c_visitor,
-        stmt->u.while_s.jump_if_false_pos,
+        stmt->u.while_s.jump_at_if_false_pos,
         (uint16_t)c_visitor->pos);
 }
 
